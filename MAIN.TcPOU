@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.10">
+  <POU Name="MAIN" Id="{c4f4d626-e859-4cd7-af51-566a5ab15381}" SpecialFunc="None">
+    <Declaration><![CDATA[//Batching machine
+PROGRAM MAIN
+VAR
+	vending: Vendingmachine;
+	aaa: REAL:= 0;
+	bbb: INT:= 3;
+	ccc: INT;
+	switch: BOOL;
+	ntStart:NT_StartProcess;
+
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[vending();
+UPTIME();
+
+IF switch THEN
+	aaa:= aaa + 1;
+	switch:= FALSE;
+END_IF
+ntStart(
+	NETID:= , 
+	PATHSTR:= 'C:\TwinCAT\3.1\Components\Plc\Tc3PlcHmi\Tc3PlcHmi.exe', 
+	DIRNAME:= 'C:\TwinCAT\3.1\Components\Plc\Tc3PlcHmi', 
+	COMNDLINE:= , 
+	START:= TRUE, 
+	TMOUT:= , 
+		BUSY=> , 
+		ERR=> , 
+	ERRID=> );]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="1703" Count="0" />
+      <LineId Id="1769" Count="1" />
+      <LineId Id="1716" Count="0" />
+      <LineId Id="1711" Count="0" />
+      <LineId Id="1718" Count="0" />
+      <LineId Id="1717" Count="0" />
+      <LineId Id="1744" Count="8" />
+      <LineId Id="1733" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

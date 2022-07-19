@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.10">
+  <ImagePool Name="ImagePool" Id="{0198076f-78ef-45a8-9e06-3397849f1e50}">
+    <XmlArchive>
+      <Data>
+        <o xml:space="preserve" t="ImagePoolObject">
+          <v n="UniqueIdGenerator">"73"</v>
+          <l n="BitmapPool" t="ArrayList" cet="ImagePoolItem">
+            <o>
+              <v n="BitmapID">"Calbee Potato Chips"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|Images\Calbee Potato Chips.jpg"</v>
+              <v n="ItemID">57</v>
+            </o>
+            <o>
+              <v n="BitmapID">"Coke"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|Images\Coke.jpg"</v>
+              <v n="ItemID">64</v>
+            </o>
+            <o>
+              <v n="BitmapID">"doritos"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|Images\doritos.png"</v>
+              <v n="ItemID">65</v>
+            </o>
+            <o>
+              <v n="BitmapID">"Houten Chilli Tapioca"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|Images\Houten Chilli Tapioca.JPG"</v>
+              <v n="ItemID">66</v>
+            </o>
+            <o>
+              <v n="BitmapID">"ice-mountain-500ml"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|Images\ice-mountain-500ml.jpg"</v>
+              <v n="ItemID">67</v>
+            </o>
+            <o>
+              <v n="BitmapID">"Meiji_Hello_Panda_Milk_Biscuits"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|Images\Meiji_Hello_Panda_Milk_Biscuits.jpg"</v>
+              <v n="ItemID">68</v>
+            </o>
+            <o>
+              <v n="BitmapID">"Pokka Green Tea"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|Images\Pokka Green Tea.jpg"</v>
+              <v n="ItemID">69</v>
+            </o>
+            <o>
+              <v n="BitmapID">"Sprite"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|Images\Sprite.jpg"</v>
+              <v n="ItemID">70</v>
+            </o>
+            <o>
+              <v n="BitmapID">"Yeos Soya Bean Milk"</v>
+              <v n="FileID">"5ce3da45-db07-42e7-a21c-a00fff4ed8f6|Images\Yeos Soya Bean Milk.jpg"</v>
+              <v n="ItemID">62</v>
+            </o>
+            <o>
+              <v n="BitmapID">""</v>
+              <v n="FileID">""</v>
+              <v n="ItemID">72</v>
+            </o>
+          </l>
+          <v n="GuidInit">{606a66ec-08a1-4a52-9e3a-2b701cd66de6}</v>
+          <v n="GuidReInit">{d8f49b87-7bf1-4f68-95d8-61b577509ee7}</v>
+          <v n="GuidExitX">{4b8248ea-50c9-4ad0-aae3-e343ce1e0e4a}</v>
+          <v n="ValidIds">true</v>
+        </o>
+      </Data>
+      <TypeList>
+        <Type n="ArrayList">System.Collections.ArrayList</Type>
+        <Type n="Boolean">System.Boolean</Type>
+        <Type n="Guid">System.Guid</Type>
+        <Type n="ImagePoolItem">{215b2719-0347-4e4d-ba85-8bcd66946f66}</Type>
+        <Type n="ImagePoolObject">{bb0b9044-714e-4614-ad3e-33cbdf34d16b}</Type>
+        <Type n="Int32">System.Int32</Type>
+        <Type n="String">System.String</Type>
+      </TypeList>
+    </XmlArchive>
+  </ImagePool>
+</TcPlcObject>

@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.10">
+  <DUT Name="EngStruct" Id="{9c65b1a4-b473-4fba-b7fb-19a26602dbf4}">
+    <Declaration><![CDATA[TYPE EngStruct :
+STRUCT
+	uptime : STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

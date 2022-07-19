@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.10">
+  <GVL Name="GVL" Id="{21a22a18-47c5-46d5-9e0b-031c76458f3d}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+
+VAR_GLOBAL 
+
+//Digital Input
+	switch1 AT %I*: BOOL;
+	switch2 AT %I*: BOOL;
+	switch3 AT %I*: BOOL;
+	switch4 AT %I*: BOOL;
+
+//Digital Output
+	led1 AT %Q*: BOOL;
+	led2 AT %Q*: BOOL;
+	led3 AT %Q*: BOOL;
+	led4 AT %Q*: BOOL;
+	
+//Analog Input
+	potentiometer1 AT %I*: INT;
+	potentiometer2 AT %I*: INT;
+	
+//Analog Output
+	voltmeter1 AT %Q*: INT;
+	voltmeter2 AT %Q*: INT;
+
+//Position Of The Motor
+Axis1 : AXIS_REF;
+
+change : REAL;
+putcup: BOOL;
+getcup: BOOL;
+buttonsp: BOOL;
+buttonco: BOOL;
+buttonfa: BOOL;
+display: STRING;
+ledr: BOOL;
+ledg: BOOL;
+xvar2: ARRAY[1..5] OF INT;
+yvar2: ARRAY[1..5] OF INT;
+dcoins: REAL;
+
+dchange: REAL;
+
+button1: BOOL;
+
+button2: BOOL;
+
+button3: BOOL;
+
+buttonA: BOOL;
+
+buttonB: BOOL;
+
+buttonC: BOOL;
+
+number: STRING;
+
+letter: STRING;
+
+sufficiency: STRING;
+take: BOOL;
+
+led: ARRAY[1..10] OF BOOL;
+
+osled : ARRAY[0..8] OF BOOL;
+xvar: ARRAY[1..10] OF INT;
+yvar: ARRAY[1..10] OF INT;
+
+buttonO: BOOL;
+resetcup: BOOL;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>
