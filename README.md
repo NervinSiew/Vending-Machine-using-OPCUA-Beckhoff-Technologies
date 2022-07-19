@@ -1,5 +1,6 @@
 # Vending-Machine-using-OPCUA-Beckhoff-Technologies
-Hi All, 
+Hi All,
+
 This is a Vending Machine application that showcases Beckhoff technology such the Stepper Motor, Beckhoff PCs- CX 51XX, and TwinCAT software. It contains OPCUA technology, which offers security integration.
 
 Finding the main program:
@@ -11,3 +12,5 @@ The sequence is: Vending-Machine-using-OPCUA-Beckhoff-Technologies/FB_Vending.Tc
 Uptime of the Machine:
 Select "UPTIME.TcPOU"
 The sequence is: Vending-Machine-using-OPCUA-Beckhoff-Technologies/UPTIME.TcPOU
+
+Thank you!
