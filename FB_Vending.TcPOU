@@ -1,0 +1,1661 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.10">
+  <POU Name="FB_Vending" Id="{ecbe2eca-4327-46a6-a96d-0332673f8ed6}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Vending
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	coinsinsert : REAL;
+	{attribute 'OPC.UA.DA' :='1'}
+	Logistic : LogStruct;
+	{attribute 'OPC.UA.DA' :='1'}
+	stock : ARRAY[0..8] OF INT := [3, 3, 3, 3, 3, 3, 3, 3, 3];
+
+	ncase: INT; 
+	timer: ARRAY[1..3] OF TON;
+	i : INT;
+	
+	tim : TON;
+	osTim : TON;
+	O: INT;
+	MoveAxis1 : MC_MoveAbsolute;
+	Reset : MC_Reset;
+	Power : Tc2_MC2.MC_Power;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[GVL.Axis1.ReadStatus(); 
+
+IF GVL.potentiometer1 < 0 THEN
+	coinsinsert := 0;
+ELSE
+	coinsinsert := (INT_TO_REAL(GVL.potentiometer1)/32767)*10; 
+END_IF
+// scalling potentiometer 1-10
+
+CASE ncase OF
+0:
+MoveAxis1.Execute:=FALSE;
+Reset.Execute:=FALSE; 
+Power.Enable:=TRUE; 
+Power.Enable_Positive:=TRUE; 
+Power.Enable_Negative:=TRUE; 
+ncase:= 60;
+
+10:
+IF GVL.button1 THEN
+	GVL.number:= '1';
+	ncase:= 20;
+ELSIF GVL.button2 THEN
+	GVL.number:= '2';
+	ncase:= 20;
+ELSIF GVL.button3 THEN
+	GVL.number:= '3';
+	ncase:= 20;
+ELSIF GVL.buttonA THEN
+	GVL.letter:= 'A';
+	ncase:= 30;
+ELSIF GVL.buttonB THEN
+	GVL.letter:= 'B';
+	ncase:= 30;
+ELSIF GVL.buttonC THEN
+	GVL.letter:= 'C';
+	ncase:= 30;
+END_IF
+
+20:
+IF GVL.button1 THEN
+	GVL.number:= '1';
+	ncase:= 20;
+ELSIF GVL.button2 THEN
+	GVL.number:= '2';
+	ncase:= 20;
+ELSIF GVL.button3 THEN
+	GVL.number:= '3';
+	ncase:= 20;
+ELSIF GVL.buttonA THEN
+	GVL.letter:= 'A';
+	ncase:= 40;
+ELSIF GVL.buttonB THEN
+	GVL.letter:= 'B';
+	ncase:= 40;
+ELSIF GVL.buttonC THEN
+	GVL.letter:= 'C';	
+	ncase:= 40;
+END_IF
+
+30:
+IF GVL.button1 THEN
+	GVL.number:= '1';
+	ncase:= 40;
+ELSIF GVL.button2 THEN
+	GVL.number:= '2';
+	ncase:= 40;
+ELSIF GVL.button3 THEN
+	GVL.number:= '3';
+	ncase:= 40;
+ELSIF GVL.buttonA THEN
+	GVL.letter:= 'A';
+	ncase:= 30;
+ELSIF GVL.buttonB THEN
+	GVL.letter:= 'B';
+	ncase:= 30;
+ELSIF GVL.buttonC THEN
+	GVL.letter:= 'C';
+	ncase:= 30;
+END_IF
+
+40:
+	IF GVL.buttonO THEN
+		IF GVL.number = '1' AND GVL.letter = 'A' AND coinsinsert >= 1.6 THEN
+			IF stock[0] =0 THEN 
+				GVL.dcoins := coinsinsert; 
+				GVL.osled[0] := TRUE;
+				GVL.led1 := TRUE;
+				GVL.sufficiency:= 'NO STOCK';
+				osTim(IN := TRUE, PT :=T#5S);
+				IF osTim.Q THEN
+					osTim(IN := FALSE);
+					ncase := 60;
+				END_IF
+			ELSE
+				GVL.dcoins := coinsinsert;
+				GVL.led[1]:= TRUE;	// DISPENSE ITEM LAMP ON
+				GVL.osled[0] := FALSE; // OUT OF STOCK LAMP OFF
+				GVL.xvar[1]:= 0;
+				GVL.yvar[1]:= 0;
+				GVL.change:= coinsinsert - 1.6;
+				Logistic.sales := Logistic.sales + 1.6;
+				GVL.sufficiency:= 'Thank You';
+				ncase:= 80;
+				i := 0;
+			
+			END_IF
+		
+		ELSIF GVL.number = '1' AND GVL.letter = 'B' AND coinsinsert >= 1.90 THEN
+			IF stock[1] =0 THEN
+					GVL.dcoins := coinsinsert; 
+					GVL.osled[1] := TRUE;
+					GVL.sufficiency:= 'NO STOCK';
+					osTim(IN := TRUE, PT :=T#5S);
+				IF osTim.Q THEN
+					osTim(IN := FALSE);
+					ncase := 60;
+				END_IF
+			ELSE
+				GVL.dcoins := coinsinsert;
+				GVL.led[2]:= TRUE;			// DISPENSE ITEM
+				GVL.osled[1] := FALSE;		// OUT OF STOCK LAMP OFF
+				GVL.xvar[2]:= 0;					
+				GVL.yvar[2]:= 0;
+				GVL.change:= coinsinsert - 1.9;
+				Logistic.sales := Logistic.sales + 1.9;
+				GVL.sufficiency:= 'Thank You';
+				ncase:= 80;
+				i := 1;
+			END_IF
+				
+		ELSIF GVL.number='1' AND GVL.letter='C' AND coinsinsert >=2 THEN
+			IF stock[2] =0 THEN 
+					GVL.dcoins := coinsinsert;
+					GVL.osled[2] := TRUE;
+					GVL.sufficiency:= 'NO STOCK';
+					osTim(IN := TRUE, PT :=T#5S);
+				IF osTim.Q THEN
+					osTim(IN := FALSE);
+					ncase := 60;
+				END_IF
+			ELSE
+				GVL.dcoins := coinsinsert;
+				GVL.led[3]:= TRUE;			// DISPENSE ITEM        
+				GVL.osled[2] := FALSE;      // OUT OF STOCK LAMP OFF
+				GVL.xvar[3]:= 0;
+				GVL.yvar[3]:= 0;		
+				GVL.change:= coinsinsert - 2;
+				Logistic.sales := Logistic.sales + 2;
+				GVL.sufficiency:= 'Thank You';
+				ncase:= 80;
+				i := 2;
+				
+			END_IF
+			
+		ELSIF GVL.number = '2' AND GVL.letter = 'A' AND coinsinsert >= 1.6 THEN
+			IF stock[3] =0 THEN 
+					GVL.dcoins := coinsinsert;
+					GVL.osled[3] := TRUE;
+					GVL.sufficiency:= 'NO STOCK';
+					osTim(IN := TRUE, PT :=T#5S);
+				IF osTim.Q THEN
+					osTim(IN := FALSE);
+					ncase := 60;
+				END_IF
+			ELSE
+				GVL.dcoins := coinsinsert;
+				GVL.led[4]:= TRUE;
+				GVL.osled[3] := FALSE;
+				GVL.xvar[4]:= 0;
+				GVL.yvar[4]:= 0;
+				GVL.change:= coinsinsert - 1.6;
+				Logistic.sales := Logistic.sales + 1.6;
+				GVL.sufficiency:= 'Thank You';
+				ncase:= 80;
+				i := 3;
+			END_IF
+			
+			ELSIF GVL.number = '2' AND GVL.letter = 'B' AND coinsinsert >= 1.4 THEN
+				IF stock[4] =0 THEN
+					GVL.dcoins := coinsinsert; 
+					GVL.osled[4] := TRUE;
+					GVL.sufficiency:= 'NO STOCK';
+					osTim(IN := TRUE, PT :=T#5S);
+				IF osTim.Q THEN
+					osTim(IN := FALSE);
+					ncase := 60;
+				END_IF
+			ELSE
+				GVL.dcoins := coinsinsert;
+				GVL.led[5]:= TRUE;
+				GVL.osled[4] := FALSE;
+				GVL.xvar[5]:= 0;
+				GVL.yvar[5]:= 0;
+				GVL.change:= coinsinsert - 1.4;
+				Logistic.sales := Logistic.sales + 1.4;
+				GVL.sufficiency:= 'Thank You';
+				ncase:= 80;
+				i := 4;
+			END_IF
+			
+			ELSIF GVL.number = '2' AND GVL.letter = 'C' AND coinsinsert >= 0.8 THEN
+				IF stock[5] =0 THEN
+					GVL.dcoins := coinsinsert; 
+					GVL.sufficiency:= 'NO STOCK';
+					osTim(IN := TRUE, PT :=T#5S);
+				IF osTim.Q THEN
+					osTim(IN := FALSE);
+					ncase := 60;
+				END_IF
+			ELSE
+				GVL.dcoins := coinsinsert;
+				GVL.led[6]:= TRUE;
+				GVL.osled[5] := FALSE;
+				GVL.xvar[6]:= 0;
+				GVL.yvar[6]:= 0;
+				GVL.change:= coinsinsert - 0.8;
+				Logistic.sales := Logistic.sales + 0.8;
+				GVL.sufficiency:= 'Thank You';
+				ncase:= 80;
+				i := 5;
+			END_IF
+			
+			ELSIF GVL.number = '3' AND GVL.letter = 'A' AND coinsinsert >= 1.3 THEN
+				IF stock[6] =0 THEN
+					GVL.dcoins := coinsinsert;
+					GVL.osled[6] := TRUE; 
+					GVL.sufficiency:= 'NO STOCK';
+					osTim(IN := TRUE, PT :=T#5S);
+				IF osTim.Q THEN
+					osTim(IN := FALSE);
+					ncase := 60;
+				END_IF
+			ELSE
+				GVL.dcoins := coinsinsert;
+				GVL.led[7]:= TRUE;
+				GVL.osled[6] := FALSE;
+				GVL.xvar[7]:= 0;
+				GVL.yvar[7]:= 0;
+				GVL.change:= coinsinsert - 1.3;
+				Logistic.sales := Logistic.sales + 1.3;
+				GVL.sufficiency:= 'Thank You';
+				ncase:= 80;
+				i := 6;
+			END_IF
+			
+			ELSIF GVL.number = '3' AND GVL.letter = 'B' AND coinsinsert >= 1.3 THEN
+				IF stock[7] =0 THEN
+					GVL.dcoins := coinsinsert;
+					GVL.osled[7] := TRUE; 
+					GVL.sufficiency:= 'NO STOCK';
+					osTim(IN := TRUE, PT :=T#5S);
+				IF osTim.Q THEN
+					osTim(IN := FALSE);
+					ncase := 60;
+				END_IF
+			ELSE
+				GVL.dcoins := coinsinsert;
+				GVL.led[8]:= TRUE;
+				GVL.osled[7] := FALSE;
+				GVL.xvar[8]:= 0;
+				GVL.yvar[8]:= 0;
+				GVL.change:= coinsinsert - 1.3;
+				Logistic.sales := Logistic.sales + 1.3;
+				GVL.sufficiency:= 'Thank You';
+				ncase:= 80;
+				i := 7;
+			END_IF
+			
+			ELSIF GVL.number = '3' AND GVL.letter = 'C' AND coinsinsert >= 1.5 THEN
+				IF stock[8] =0 THEN
+					GVL.dcoins := coinsinsert;
+					GVL.osled[8] := TRUE; 
+					GVL.sufficiency:= 'NO STOCK';
+					osTim(IN := TRUE, PT :=T#5S);
+				IF osTim.Q THEN
+					osTim(IN := FALSE);
+					ncase := 60;
+				END_IF
+			ELSE
+				GVL.dcoins := coinsinsert;
+				GVL.led[9]:= TRUE;
+				GVL.osled[8] := FALSE;
+				GVL.xvar[9]:= 0;
+				GVL.yvar[9]:= 0;
+				GVL.change:= coinsinsert - 1.5;
+				Logistic.sales := Logistic.sales + 1.5;
+				GVL.sufficiency:= 'Thank You';
+				ncase:= 80;
+				i := 8;
+			END_IF
+			
+	ELSE
+		GVL.sufficiency:= 'Insufficient';
+		ncase:= 70; 
+END_IF
+	
+
+END_IF
+
+
+
+50:
+MoveAxis1.Position:=0; 
+MoveAxis1.Velocity:=1000;     
+MoveAxis1.Execute:=TRUE; 
+stock[i] := stock[i] -1;
+
+ncase:= 100;
+
+60:
+GVL.buttonO:= FALSE;
+GVL.dcoins:= 0;
+GVL.dchange:= 0;
+GVL.number:= ' ';
+GVL.letter:= ' ';
+GVL.sufficiency:= ' ';
+GVL.xvar[1]:= 300;
+GVL.yvar[1]:= 400;
+GVL.xvar[2]:= 300;
+GVL.yvar[2]:= 400;
+GVL.xvar[3]:= 300;
+GVL.yvar[3]:= 400;
+GVL.xvar[4]:= 300;
+GVL.yvar[4]:= 400;
+GVL.xvar[5]:= 300;
+GVL.yvar[5]:= 400;
+GVL.xvar[6]:= 300;
+GVL.yvar[6]:= 400;
+GVL.xvar[7]:= 300;
+GVL.yvar[7]:= 400;
+GVL.xvar[8]:= 300;
+GVL.yvar[8]:= 400;
+GVL.xvar[9]:= 300;
+GVL.yvar[9]:= 400;
+GVL.led[1]:= FALSE;
+GVL.led[2]:= FALSE;
+GVL.led[3]:= FALSE;
+GVL.led[4]:= FALSE;
+GVL.led[5]:= FALSE;
+GVL.led[6]:= FALSE;
+GVL.led[7]:= FALSE;
+GVL.led[8]:= FALSE;
+GVL.led[9]:= FALSE;
+ncase:= 10;
+
+70:
+tim(IN := TRUE, PT :=T#5S);
+IF tim.Q THEN
+	tim(IN := FALSE);
+	ncase:= 71;
+END_IF
+
+71:
+IF stock[0] = 0 THEN
+	GVL.osled[0] := TRUE;
+	ncase:= 72;
+ELSE
+	ncase := 72;
+	
+	END_IF
+	
+72:
+IF stock[1] = 0 THEN
+	GVL.osled[1] := TRUE;
+	ncase:= 73;
+	ELSE
+	ncase := 73;
+	END_IF
+73:
+IF stock[2] = 0 THEN
+	GVL.osled[2] := TRUE;
+	ncase:= 74;
+	ELSE
+	ncase := 74;
+	END_IF
+74:
+IF
+	stock[3] = 0 THEN
+	GVL.osled[3] := TRUE;
+	ncase:= 75;
+	ELSE
+	ncase := 75;
+	END_IF
+75:
+IF
+	stock[4] = 0 THEN
+	GVL.osled[4] := TRUE;
+	ncase:= 76;
+	ELSE
+	ncase := 76;
+	END_IF
+76:
+IF
+	stock[5] = 0 THEN
+	GVL.osled[5] := TRUE;
+	ncase:= 77;
+	ELSE
+	ncase := 77;
+	END_IF
+77:
+IF
+	stock[6] = 0 THEN
+	GVL.osled[6] := TRUE;
+	ncase:= 78;
+	ELSE
+	ncase := 78;
+	END_IF
+78:
+IF stock[7] = 0 THEN
+	GVL.osled[7] := TRUE;
+	ncase:= 79;
+	ELSE
+	ncase := 79;
+	END_IF
+79:	
+IF stock[8] = 0 THEN
+	GVL.osled[8] := TRUE;
+	ncase:= 60;
+	ELSE
+	ncase := 60;
+
+END_IF
+
+80:
+MoveAxis1.Position:=2000; 
+MoveAxis1.Velocity:=1000;     
+MoveAxis1.Execute:=TRUE;    
+IF MoveAxis1.Done THEN  
+	MoveAxis1.Execute:=FALSE; 
+	GVL.buttonO:= FALSE;
+	ncase:= 90;
+END_IF
+
+90:
+timer[1](IN:= TRUE, PT:= T#0.5S);
+IF timer[1].Q THEN
+	timer[1](IN:= FALSE);
+	ncase:= 50;
+END_IF
+
+100:
+IF MoveAxis1.Done THEN  
+	MoveAxis1.Execute:=FALSE; 
+	GVL.dcoins := coinsinsert;
+	GVL.dchange:= GVL.change;
+	
+	ncase:= 70; 
+END_IF
+
+
+
+END_CASE
+ActPower();  
+ActMove(); 
+ActReset(); ]]></ST>
+    </Implementation>
+    <Action Name="ActMove" Id="{5d9af8c5-5509-407f-bc44-35e4328c501f}">
+      <Implementation>
+        <NWL>
+          <XmlArchive>
+            <Data>
+              <o xml:space="preserve" t="NWLImplementationObject">
+                <v n="NetworkListComment">""</v>
+                <v n="DefaultViewMode">"Fbd"</v>
+                <l2 n="NetworkList" cet="Network">
+                  <o>
+                    <v n="ILActive">false</v>
+                    <v n="FBDValid">false</v>
+                    <v n="ILValid">false</v>
+                    <l2 n="ILLines" />
+                    <v n="Comment">""</v>
+                    <v n="Title">""</v>
+                    <v n="Label">""</v>
+                    <v n="OutCommented">false</v>
+                    <l2 n="NetworkItems" cet="BoxTreeBox">
+                      <o>
+                        <v n="BoxType">"MC_MoveAbsolute"</v>
+                        <o n="Instance" t="Operand">
+                          <v n="Operand">"MoveAxis1"</v>
+                          <v n="Type">"MC_MoveAbsolute"</v>
+                          <v n="Comment">""</v>
+                          <v n="SymbolComment">""</v>
+                          <v n="Address">""</v>
+                          <o n="Flags" t="Flags">
+                            <v n="Flags">0</v>
+                            <v n="Fixed">false</v>
+                            <v n="Extensible">false</v>
+                          </o>
+                          <v n="LValue">false</v>
+                          <v n="Boolean">false</v>
+                          <v n="IsInstance">true</v>
+                          <v n="Id">10L</v>
+                        </o>
+                        <o n="OutputItems" t="OutputItemList">
+                          <l2 n="OutputItems" cet="Operand">
+                            <n />
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">12L</v>
+                            </o>
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">13L</v>
+                            </o>
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">14L</v>
+                            </o>
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">15L</v>
+                            </o>
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">16L</v>
+                            </o>
+                          </l2>
+                        </o>
+                        <o n="Flags" t="Flags">
+                          <v n="Flags">0</v>
+                          <v n="Fixed">true</v>
+                          <v n="Extensible">false</v>
+                        </o>
+                        <n n="InputFlags" />
+                        <l2 n="InputItems" cet="BoxTreeOperand">
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">"GVL.Axis1"</v>
+                              <v n="Type">"AXIS_REF"</v>
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">5L</v>
+                            </o>
+                            <v n="Id">4L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">7L</v>
+                            </o>
+                            <v n="Id">6L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">18L</v>
+                            </o>
+                            <v n="Id">17L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">20L</v>
+                            </o>
+                            <v n="Id">19L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">22L</v>
+                            </o>
+                            <v n="Id">21L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">24L</v>
+                            </o>
+                            <v n="Id">23L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">26L</v>
+                            </o>
+                            <v n="Id">25L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">28L</v>
+                            </o>
+                            <v n="Id">27L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">30L</v>
+                            </o>
+                            <v n="Id">29L</v>
+                          </o>
+                        </l2>
+                        <o n="InputParam" t="ParamList">
+                          <l2 n="Names" cet="String">
+                            <v>Axis</v>
+                            <v>Execute</v>
+                            <v>Position</v>
+                            <v>Velocity</v>
+                            <v>Acceleration</v>
+                            <v>Deceleration</v>
+                            <v>Jerk</v>
+                            <v>BufferMode</v>
+                            <v>Options</v>
+                          </l2>
+                          <l2 n="Types" cet="String">
+                            <v>AXIS_REF[REF]</v>
+                            <v>BOOL</v>
+                            <v>LREAL</v>
+                            <v>LREAL</v>
+                            <v>LREAL</v>
+                            <v>LREAL</v>
+                            <v>LREAL</v>
+                            <v>MC_BufferMode</v>
+                            <v>ST_MoveOptions</v>
+                          </l2>
+                        </o>
+                        <o n="OutputParam" t="ParamList">
+                          <l2 n="Names" cet="String">
+                            <v>Done</v>
+                            <v>Busy</v>
+                            <v>Active</v>
+                            <v>CommandAborted</v>
+                            <v>Error</v>
+                            <v>ErrorID</v>
+                          </l2>
+                          <l2 n="Types" cet="String">
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>UDINT</v>
+                          </l2>
+                        </o>
+                        <v n="CallType" t="Operator">FunctionBlock</v>
+                        <v n="EN">false</v>
+                        <v n="ENO">false</v>
+                        <n n="STSnippet" />
+                        <v n="ContainsExtensibleInputs">false</v>
+                        <v n="ProvidesSTSnippet">false</v>
+                        <v n="Id">11L</v>
+                      </o>
+                    </l2>
+                    <l2 n="Connectors" />
+                    <v n="Id">1L</v>
+                  </o>
+                </l2>
+                <v n="BranchCounter">0</v>
+                <v n="ValidIds">true</v>
+              </o>
+            </Data>
+            <TypeList>
+              <Type n="Boolean">System.Boolean</Type>
+              <Type n="BoxTreeBox">{acfc6f68-8e3a-4af5-bf81-3dd512095a46}</Type>
+              <Type n="BoxTreeOperand">{9de7f100-1b87-424c-a62e-45b0cfc85ed2}</Type>
+              <Type n="Flags">{668066f2-6069-46b3-8962-8db8d13d7db2}</Type>
+              <Type n="Int32">System.Int32</Type>
+              <Type n="Int64">System.Int64</Type>
+              <Type n="Network">{d9a99d73-b633-47db-b876-a752acb25871}</Type>
+              <Type n="NWLImplementationObject">{25e509de-33d4-4447-93f8-c9e4ea381c8b}</Type>
+              <Type n="Operand">{c9b2f165-48a2-4a45-8326-3952d8a3d708}</Type>
+              <Type n="Operator">{bffb3c53-f105-4e85-aba2-e30df579d75f}</Type>
+              <Type n="OutputItemList">{f40d3e09-c02c-4522-a88c-dac23558cfc4}</Type>
+              <Type n="ParamList">{71496971-9e0c-4677-a832-b9583b571130}</Type>
+              <Type n="String">System.String</Type>
+            </TypeList>
+          </XmlArchive>
+        </NWL>
+      </Implementation>
+    </Action>
+    <Action Name="ActPower" Id="{809b70a2-6505-4f08-a220-a126e5fe51f8}">
+      <Implementation>
+        <NWL>
+          <XmlArchive>
+            <Data>
+              <o xml:space="preserve" t="NWLImplementationObject">
+                <v n="NetworkListComment">""</v>
+                <v n="DefaultViewMode">"Fbd"</v>
+                <l2 n="NetworkList" cet="Network">
+                  <o>
+                    <v n="ILActive">false</v>
+                    <v n="FBDValid">false</v>
+                    <v n="ILValid">false</v>
+                    <l2 n="ILLines" />
+                    <v n="Comment">""</v>
+                    <v n="Title">""</v>
+                    <v n="Label">""</v>
+                    <v n="OutCommented">false</v>
+                    <l2 n="NetworkItems" cet="BoxTreeBox">
+                      <o>
+                        <v n="BoxType">"MC_Power"</v>
+                        <o n="Instance" t="Operand">
+                          <v n="Operand">"Power"</v>
+                          <v n="Type">"Tc2_MC2.MC_Power"</v>
+                          <v n="Comment">""</v>
+                          <v n="SymbolComment">""</v>
+                          <v n="Address">""</v>
+                          <o n="Flags" t="Flags">
+                            <v n="Flags">0</v>
+                            <v n="Fixed">false</v>
+                            <v n="Extensible">false</v>
+                          </o>
+                          <v n="LValue">false</v>
+                          <v n="Boolean">false</v>
+                          <v n="IsInstance">true</v>
+                          <v n="Id">8L</v>
+                        </o>
+                        <o n="OutputItems" t="OutputItemList">
+                          <l2 n="OutputItems" cet="Operand">
+                            <n />
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">10L</v>
+                            </o>
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">11L</v>
+                            </o>
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">12L</v>
+                            </o>
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">13L</v>
+                            </o>
+                          </l2>
+                        </o>
+                        <o n="Flags" t="Flags">
+                          <v n="Flags">0</v>
+                          <v n="Fixed">true</v>
+                          <v n="Extensible">false</v>
+                        </o>
+                        <n n="InputFlags" />
+                        <l2 n="InputItems" cet="BoxTreeOperand">
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">"GVL.Axis1"</v>
+                              <v n="Type">"AXIS_REF"</v>
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">5L</v>
+                            </o>
+                            <v n="Id">4L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">7L</v>
+                            </o>
+                            <v n="Id">6L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">15L</v>
+                            </o>
+                            <v n="Id">14L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">17L</v>
+                            </o>
+                            <v n="Id">16L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">"100"</v>
+                              <v n="Type">"INT"</v>
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">19L</v>
+                            </o>
+                            <v n="Id">18L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">21L</v>
+                            </o>
+                            <v n="Id">20L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">23L</v>
+                            </o>
+                            <v n="Id">22L</v>
+                          </o>
+                        </l2>
+                        <o n="InputParam" t="ParamList">
+                          <l2 n="Names" cet="String">
+                            <v>Axis</v>
+                            <v>Enable</v>
+                            <v>Enable_Positive</v>
+                            <v>Enable_Negative</v>
+                            <v>Override</v>
+                            <v>BufferMode</v>
+                            <v>Options</v>
+                          </l2>
+                          <l2 n="Types" cet="String">
+                            <v>AXIS_REF[REF]</v>
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>LREAL</v>
+                            <v>MC_BufferMode</v>
+                            <v>ST_PowerOptions</v>
+                          </l2>
+                        </o>
+                        <o n="OutputParam" t="ParamList">
+                          <l2 n="Names" cet="String">
+                            <v>Status</v>
+                            <v>Busy</v>
+                            <v>Active</v>
+                            <v>Error</v>
+                            <v>ErrorID</v>
+                          </l2>
+                          <l2 n="Types" cet="String">
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>UDINT</v>
+                          </l2>
+                        </o>
+                        <v n="CallType" t="Operator">FunctionBlock</v>
+                        <v n="EN">false</v>
+                        <v n="ENO">false</v>
+                        <n n="STSnippet" />
+                        <v n="ContainsExtensibleInputs">false</v>
+                        <v n="ProvidesSTSnippet">false</v>
+                        <v n="Id">9L</v>
+                      </o>
+                    </l2>
+                    <l2 n="Connectors" />
+                    <v n="Id">1L</v>
+                  </o>
+                </l2>
+                <v n="BranchCounter">0</v>
+                <v n="ValidIds">true</v>
+              </o>
+            </Data>
+            <TypeList>
+              <Type n="Boolean">System.Boolean</Type>
+              <Type n="BoxTreeBox">{acfc6f68-8e3a-4af5-bf81-3dd512095a46}</Type>
+              <Type n="BoxTreeOperand">{9de7f100-1b87-424c-a62e-45b0cfc85ed2}</Type>
+              <Type n="Flags">{668066f2-6069-46b3-8962-8db8d13d7db2}</Type>
+              <Type n="Int32">System.Int32</Type>
+              <Type n="Int64">System.Int64</Type>
+              <Type n="Network">{d9a99d73-b633-47db-b876-a752acb25871}</Type>
+              <Type n="NWLImplementationObject">{25e509de-33d4-4447-93f8-c9e4ea381c8b}</Type>
+              <Type n="Operand">{c9b2f165-48a2-4a45-8326-3952d8a3d708}</Type>
+              <Type n="Operator">{bffb3c53-f105-4e85-aba2-e30df579d75f}</Type>
+              <Type n="OutputItemList">{f40d3e09-c02c-4522-a88c-dac23558cfc4}</Type>
+              <Type n="ParamList">{71496971-9e0c-4677-a832-b9583b571130}</Type>
+              <Type n="String">System.String</Type>
+            </TypeList>
+          </XmlArchive>
+        </NWL>
+      </Implementation>
+    </Action>
+    <Action Name="ActReset" Id="{8bfa41bd-a4d0-4251-b262-15d363adbdd2}">
+      <Implementation>
+        <NWL>
+          <XmlArchive>
+            <Data>
+              <o xml:space="preserve" t="NWLImplementationObject">
+                <v n="NetworkListComment">""</v>
+                <v n="DefaultViewMode">"Fbd"</v>
+                <l2 n="NetworkList" cet="Network">
+                  <o>
+                    <v n="ILActive">false</v>
+                    <v n="FBDValid">false</v>
+                    <v n="ILValid">false</v>
+                    <l2 n="ILLines" />
+                    <v n="Comment">""</v>
+                    <v n="Title">""</v>
+                    <v n="Label">""</v>
+                    <v n="OutCommented">false</v>
+                    <l2 n="NetworkItems" cet="BoxTreeBox">
+                      <o>
+                        <v n="BoxType">"MC_Reset"</v>
+                        <o n="Instance" t="Operand">
+                          <v n="Operand">"Reset"</v>
+                          <v n="Type">"MC_Reset"</v>
+                          <v n="Comment">""</v>
+                          <v n="SymbolComment">""</v>
+                          <v n="Address">""</v>
+                          <o n="Flags" t="Flags">
+                            <v n="Flags">0</v>
+                            <v n="Fixed">false</v>
+                            <v n="Extensible">false</v>
+                          </o>
+                          <v n="LValue">false</v>
+                          <v n="Boolean">false</v>
+                          <v n="IsInstance">true</v>
+                          <v n="Id">8L</v>
+                        </o>
+                        <o n="OutputItems" t="OutputItemList">
+                          <l2 n="OutputItems" cet="Operand">
+                            <n />
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">10L</v>
+                            </o>
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">11L</v>
+                            </o>
+                            <o>
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">true</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">12L</v>
+                            </o>
+                          </l2>
+                        </o>
+                        <o n="Flags" t="Flags">
+                          <v n="Flags">0</v>
+                          <v n="Fixed">true</v>
+                          <v n="Extensible">false</v>
+                        </o>
+                        <n n="InputFlags" />
+                        <l2 n="InputItems" cet="BoxTreeOperand">
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">"GVL.Axis1"</v>
+                              <v n="Type">"AXIS_REF"</v>
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">5L</v>
+                            </o>
+                            <v n="Id">4L</v>
+                          </o>
+                          <o>
+                            <o n="Operand" t="Operand">
+                              <v n="Operand">""</v>
+                              <n n="Type" />
+                              <v n="Comment">""</v>
+                              <v n="SymbolComment">""</v>
+                              <v n="Address">""</v>
+                              <o n="Flags" t="Flags">
+                                <v n="Flags">0</v>
+                                <v n="Fixed">false</v>
+                                <v n="Extensible">false</v>
+                              </o>
+                              <v n="LValue">false</v>
+                              <v n="Boolean">false</v>
+                              <v n="IsInstance">false</v>
+                              <v n="Id">7L</v>
+                            </o>
+                            <v n="Id">6L</v>
+                          </o>
+                        </l2>
+                        <o n="InputParam" t="ParamList">
+                          <l2 n="Names" cet="String">
+                            <v>Axis</v>
+                            <v>Execute</v>
+                          </l2>
+                          <l2 n="Types" cet="String">
+                            <v>AXIS_REF[REF]</v>
+                            <v>BOOL</v>
+                          </l2>
+                        </o>
+                        <o n="OutputParam" t="ParamList">
+                          <l2 n="Names" cet="String">
+                            <v>Done</v>
+                            <v>Busy</v>
+                            <v>Error</v>
+                            <v>ErrorID</v>
+                          </l2>
+                          <l2 n="Types" cet="String">
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>BOOL</v>
+                            <v>UDINT</v>
+                          </l2>
+                        </o>
+                        <v n="CallType" t="Operator">FunctionBlock</v>
+                        <v n="EN">false</v>
+                        <v n="ENO">false</v>
+                        <n n="STSnippet" />
+                        <v n="ContainsExtensibleInputs">false</v>
+                        <v n="ProvidesSTSnippet">false</v>
+                        <v n="Id">9L</v>
+                      </o>
+                    </l2>
+                    <l2 n="Connectors" />
+                    <v n="Id">1L</v>
+                  </o>
+                </l2>
+                <v n="BranchCounter">0</v>
+                <v n="ValidIds">true</v>
+              </o>
+            </Data>
+            <TypeList>
+              <Type n="Boolean">System.Boolean</Type>
+              <Type n="BoxTreeBox">{acfc6f68-8e3a-4af5-bf81-3dd512095a46}</Type>
+              <Type n="BoxTreeOperand">{9de7f100-1b87-424c-a62e-45b0cfc85ed2}</Type>
+              <Type n="Flags">{668066f2-6069-46b3-8962-8db8d13d7db2}</Type>
+              <Type n="Int32">System.Int32</Type>
+              <Type n="Int64">System.Int64</Type>
+              <Type n="Network">{d9a99d73-b633-47db-b876-a752acb25871}</Type>
+              <Type n="NWLImplementationObject">{25e509de-33d4-4447-93f8-c9e4ea381c8b}</Type>
+              <Type n="Operand">{c9b2f165-48a2-4a45-8326-3952d8a3d708}</Type>
+              <Type n="Operator">{bffb3c53-f105-4e85-aba2-e30df579d75f}</Type>
+              <Type n="OutputItemList">{f40d3e09-c02c-4522-a88c-dac23558cfc4}</Type>
+              <Type n="ParamList">{71496971-9e0c-4677-a832-b9583b571130}</Type>
+              <Type n="String">System.String</Type>
+            </TypeList>
+          </XmlArchive>
+        </NWL>
+      </Implementation>
+    </Action>
+    <LineIds Name="FB_Vending">
+      <LineId Id="322" Count="0" />
+      <LineId Id="1212" Count="0" />
+      <LineId Id="572" Count="0" />
+      <LineId Id="1213" Count="0" />
+      <LineId Id="1216" Count="1" />
+      <LineId Id="1214" Count="0" />
+      <LineId Id="562" Count="0" />
+      <LineId Id="571" Count="0" />
+      <LineId Id="11" Count="0" />
+      <LineId Id="257" Count="0" />
+      <LineId Id="311" Count="0" />
+      <LineId Id="309" Count="0" />
+      <LineId Id="313" Count="1" />
+      <LineId Id="312" Count="0" />
+      <LineId Id="43" Count="23" />
+      <LineId Id="195" Count="7" />
+      <LineId Id="194" Count="0" />
+      <LineId Id="67" Count="20" />
+      <LineId Id="204" Count="8" />
+      <LineId Id="88" Count="0" />
+      <LineId Id="1182" Count="0" />
+      <LineId Id="1113" Count="0" />
+      <LineId Id="1188" Count="0" />
+      <LineId Id="1095" Count="0" />
+      <LineId Id="1219" Count="0" />
+      <LineId Id="1365" Count="0" />
+      <LineId Id="1294" Count="0" />
+      <LineId Id="1480" Count="0" />
+      <LineId Id="1364" Count="0" />
+      <LineId Id="1369" Count="3" />
+      <LineId Id="1368" Count="0" />
+      <LineId Id="1223" Count="0" />
+      <LineId Id="1366" Count="0" />
+      <LineId Id="1096" Count="1" />
+      <LineId Id="1102" Count="5" />
+      <LineId Id="688" Count="0" />
+      <LineId Id="1224" Count="1" />
+      <LineId Id="593" Count="0" />
+      <LineId Id="96" Count="0" />
+      <LineId Id="1228" Count="0" />
+      <LineId Id="1414" Count="0" />
+      <LineId Id="1291" Count="0" />
+      <LineId Id="1373" Count="4" />
+      <LineId Id="1229" Count="0" />
+      <LineId Id="1227" Count="0" />
+      <LineId Id="1416" Count="0" />
+      <LineId Id="97" Count="0" />
+      <LineId Id="658" Count="0" />
+      <LineId Id="98" Count="0" />
+      <LineId Id="1458" Count="0" />
+      <LineId Id="155" Count="0" />
+      <LineId Id="606" Count="0" />
+      <LineId Id="172" Count="0" />
+      <LineId Id="474" Count="0" />
+      <LineId Id="591" Count="0" />
+      <LineId Id="780" Count="0" />
+      <LineId Id="1230" Count="0" />
+      <LineId Id="798" Count="0" />
+      <LineId Id="1232" Count="0" />
+      <LineId Id="1417" Count="0" />
+      <LineId Id="1292" Count="0" />
+      <LineId Id="1378" Count="4" />
+      <LineId Id="1233" Count="0" />
+      <LineId Id="1231" Count="0" />
+      <LineId Id="1418" Count="0" />
+      <LineId Id="799" Count="1" />
+      <LineId Id="805" Count="6" />
+      <LineId Id="1268" Count="2" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="1234" Count="0" />
+      <LineId Id="1419" Count="0" />
+      <LineId Id="1293" Count="0" />
+      <LineId Id="1383" Count="4" />
+      <LineId Id="1235" Count="1" />
+      <LineId Id="1420" Count="0" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="660" Count="0" />
+      <LineId Id="106" Count="0" />
+      <LineId Id="1020" Count="0" />
+      <LineId Id="157" Count="0" />
+      <LineId Id="608" Count="0" />
+      <LineId Id="170" Count="0" />
+      <LineId Id="472" Count="0" />
+      <LineId Id="595" Count="0" />
+      <LineId Id="1237" Count="1" />
+      <LineId Id="108" Count="0" />
+      <LineId Id="1422" Count="1" />
+      <LineId Id="1298" Count="0" />
+      <LineId Id="1388" Count="4" />
+      <LineId Id="1241" Count="0" />
+      <LineId Id="1239" Count="0" />
+      <LineId Id="1424" Count="0" />
+      <LineId Id="109" Count="0" />
+      <LineId Id="661" Count="0" />
+      <LineId Id="110" Count="1" />
+      <LineId Id="158" Count="0" />
+      <LineId Id="609" Count="0" />
+      <LineId Id="169" Count="0" />
+      <LineId Id="471" Count="0" />
+      <LineId Id="596" Count="0" />
+      <LineId Id="1242" Count="1" />
+      <LineId Id="112" Count="0" />
+      <LineId Id="1245" Count="0" />
+      <LineId Id="1425" Count="0" />
+      <LineId Id="1393" Count="4" />
+      <LineId Id="1246" Count="0" />
+      <LineId Id="1244" Count="0" />
+      <LineId Id="1426" Count="0" />
+      <LineId Id="113" Count="0" />
+      <LineId Id="662" Count="0" />
+      <LineId Id="114" Count="1" />
+      <LineId Id="159" Count="0" />
+      <LineId Id="610" Count="0" />
+      <LineId Id="168" Count="0" />
+      <LineId Id="470" Count="0" />
+      <LineId Id="597" Count="0" />
+      <LineId Id="1247" Count="1" />
+      <LineId Id="116" Count="0" />
+      <LineId Id="1249" Count="0" />
+      <LineId Id="1300" Count="0" />
+      <LineId Id="1427" Count="0" />
+      <LineId Id="1398" Count="4" />
+      <LineId Id="1250" Count="1" />
+      <LineId Id="1428" Count="0" />
+      <LineId Id="117" Count="0" />
+      <LineId Id="663" Count="0" />
+      <LineId Id="118" Count="1" />
+      <LineId Id="160" Count="0" />
+      <LineId Id="611" Count="0" />
+      <LineId Id="167" Count="0" />
+      <LineId Id="469" Count="0" />
+      <LineId Id="598" Count="0" />
+      <LineId Id="1252" Count="1" />
+      <LineId Id="120" Count="0" />
+      <LineId Id="1430" Count="1" />
+      <LineId Id="1301" Count="0" />
+      <LineId Id="1403" Count="4" />
+      <LineId Id="1256" Count="0" />
+      <LineId Id="1254" Count="0" />
+      <LineId Id="1433" Count="0" />
+      <LineId Id="121" Count="0" />
+      <LineId Id="664" Count="0" />
+      <LineId Id="122" Count="1" />
+      <LineId Id="161" Count="0" />
+      <LineId Id="612" Count="0" />
+      <LineId Id="166" Count="0" />
+      <LineId Id="468" Count="0" />
+      <LineId Id="599" Count="0" />
+      <LineId Id="1257" Count="1" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="1260" Count="0" />
+      <LineId Id="1434" Count="0" />
+      <LineId Id="1302" Count="0" />
+      <LineId Id="1408" Count="4" />
+      <LineId Id="1261" Count="0" />
+      <LineId Id="1259" Count="0" />
+      <LineId Id="1436" Count="0" />
+      <LineId Id="463" Count="0" />
+      <LineId Id="665" Count="0" />
+      <LineId Id="1024" Count="0" />
+      <LineId Id="127" Count="0" />
+      <LineId Id="162" Count="0" />
+      <LineId Id="613" Count="0" />
+      <LineId Id="165" Count="0" />
+      <LineId Id="467" Count="0" />
+      <LineId Id="600" Count="0" />
+      <LineId Id="782" Count="0" />
+      <LineId Id="797" Count="0" />
+      <LineId Id="163" Count="1" />
+      <LineId Id="484" Count="0" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="573" Count="0" />
+      <LineId Id="567" Count="0" />
+      <LineId Id="1018" Count="0" />
+      <LineId Id="970" Count="0" />
+      <LineId Id="1264" Count="0" />
+      <LineId Id="1267" Count="0" />
+      <LineId Id="131" Count="0" />
+      <LineId Id="328" Count="2" />
+      <LineId Id="1305" Count="0" />
+      <LineId Id="533" Count="0" />
+      <LineId Id="332" Count="0" />
+      <LineId Id="260" Count="0" />
+      <LineId Id="259" Count="0" />
+      <LineId Id="261" Count="27" />
+      <LineId Id="847" Count="3" />
+      <LineId Id="293" Count="0" />
+      <LineId Id="136" Count="0" />
+      <LineId Id="334" Count="0" />
+      <LineId Id="333" Count="0" />
+      <LineId Id="545" Count="0" />
+      <LineId Id="336" Count="0" />
+      <LineId Id="546" Count="0" />
+      <LineId Id="337" Count="0" />
+      <LineId Id="335" Count="0" />
+      <LineId Id="1011" Count="0" />
+      <LineId Id="705" Count="0" />
+      <LineId Id="716" Count="0" />
+      <LineId Id="718" Count="0" />
+      <LineId Id="761" Count="0" />
+      <LineId Id="1323" Count="2" />
+      <LineId Id="1322" Count="0" />
+      <LineId Id="1307" Count="0" />
+      <LineId Id="1306" Count="0" />
+      <LineId Id="732" Count="0" />
+      <LineId Id="734" Count="0" />
+      <LineId Id="762" Count="0" />
+      <LineId Id="1326" Count="1" />
+      <LineId Id="1321" Count="0" />
+      <LineId Id="1308" Count="0" />
+      <LineId Id="736" Count="0" />
+      <LineId Id="735" Count="0" />
+      <LineId Id="763" Count="0" />
+      <LineId Id="1328" Count="1" />
+      <LineId Id="1320" Count="0" />
+      <LineId Id="1311" Count="0" />
+      <LineId Id="739" Count="1" />
+      <LineId Id="738" Count="0" />
+      <LineId Id="764" Count="0" />
+      <LineId Id="1330" Count="1" />
+      <LineId Id="1319" Count="0" />
+      <LineId Id="1312" Count="0" />
+      <LineId Id="743" Count="1" />
+      <LineId Id="741" Count="0" />
+      <LineId Id="765" Count="0" />
+      <LineId Id="1332" Count="1" />
+      <LineId Id="1318" Count="0" />
+      <LineId Id="1313" Count="0" />
+      <LineId Id="747" Count="1" />
+      <LineId Id="745" Count="0" />
+      <LineId Id="766" Count="0" />
+      <LineId Id="1334" Count="1" />
+      <LineId Id="1317" Count="0" />
+      <LineId Id="1314" Count="0" />
+      <LineId Id="750" Count="1" />
+      <LineId Id="749" Count="0" />
+      <LineId Id="767" Count="0" />
+      <LineId Id="1336" Count="1" />
+      <LineId Id="1316" Count="0" />
+      <LineId Id="1310" Count="0" />
+      <LineId Id="753" Count="0" />
+      <LineId Id="752" Count="0" />
+      <LineId Id="768" Count="0" />
+      <LineId Id="1338" Count="1" />
+      <LineId Id="1315" Count="0" />
+      <LineId Id="1309" Count="0" />
+      <LineId Id="756" Count="0" />
+      <LineId Id="755" Count="0" />
+      <LineId Id="769" Count="0" />
+      <LineId Id="1340" Count="1" />
+      <LineId Id="1030" Count="0" />
+      <LineId Id="725" Count="0" />
+      <LineId Id="723" Count="0" />
+      <LineId Id="368" Count="0" />
+      <LineId Id="371" Count="3" />
+      <LineId Id="394" Count="0" />
+      <LineId Id="505" Count="0" />
+      <LineId Id="378" Count="0" />
+      <LineId Id="369" Count="0" />
+      <LineId Id="397" Count="0" />
+      <LineId Id="370" Count="0" />
+      <LineId Id="399" Count="1" />
+      <LineId Id="398" Count="0" />
+      <LineId Id="402" Count="0" />
+      <LineId Id="401" Count="0" />
+      <LineId Id="476" Count="0" />
+      <LineId Id="294" Count="0" />
+      <LineId Id="478" Count="1" />
+      <LineId Id="487" Count="0" />
+      <LineId Id="519" Count="0" />
+      <LineId Id="544" Count="0" />
+      <LineId Id="482" Count="0" />
+      <LineId Id="477" Count="0" />
+      <LineId Id="837" Count="0" />
+      <LineId Id="884" Count="0" />
+      <LineId Id="483" Count="0" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="325" Count="1" />
+      <LineId Id="295" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
